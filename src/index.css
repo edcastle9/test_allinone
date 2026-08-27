@@ -1,0 +1,84 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #0c0c0e;
+  --ink: #ffffff;
+  --accent: #00ff66;
+  --ink-dim: rgba(255, 255, 255, 0.4);
+  --border: rgba(255, 255, 255, 0.1);
+  --panel: #141417;
+}
+
+@layer base {
+  body {
+    background-color: var(--bg);
+    color: var(--ink);
+    font-family: "Geist", "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  
+  .font-mono {
+    font-family: "Geist Mono", monospace;
+  }
+
+  .font-syne {
+    font-family: "Syne", sans-serif;
+  }
+}
+
+.terminal-grid {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.section-label {
+  font-family: "Geist Mono", monospace;
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.section-label::before {
+  content: "";
+  width: 4px;
+  height: 4px;
+  background: var(--accent);
+  display: inline-block;
+}
+
+.section-label-danger {
+  color: #ff4444;
+}
+
+.section-label-danger::before {
+  background: #ff4444;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Custom Sleek Dark Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0c0c0e;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00ff66;
+}
+
