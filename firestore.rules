@@ -1,0 +1,24 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Allow read and write to teacher counseling sessions
+    match /counseling_sessions/{sessionId} {
+      allow read, write: if true;
+    }
+
+    // Allow read and write to secret diary entries
+    match /diary_entries/{entryId} {
+      allow read, write: if true;
+    }
+
+    // Allow read and write to burnout history assessments
+    match /burnout_history/{historyId} {
+      allow read, write: if true;
+    }
+
+    // Default match for other collections if any
+    match /{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

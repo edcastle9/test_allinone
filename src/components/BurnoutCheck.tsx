@@ -15,7 +15,8 @@ import {
   Zap,
 } from "lucide-react";
 import { BURNOUT_QUESTIONS } from "../data/counselingData";
-import { BurnoutResult } from "../types";
+import { BurnoutResult, BurnoutHistoryItem } from "../types";
+import { saveBurnoutHistoryToFirestore } from "../services/firestoreService";
 
 interface BurnoutCheckProps {
   onOpenCounseling: () => void;
@@ -86,7 +87,21 @@ export const BurnoutCheck: React.FC<BurnoutCheckProps> = ({
         }),
       });
       const data = await response.json();
-      setResult((prev) => (prev ? { ...prev, prescription: data } : null));
+      const finalResult: BurnoutResult = { ...tempResult, prescription: data };
+      setResult(finalResult);
+
+      // Persist test assessment to Firestore
+      const historyItem: BurnoutHistoryItem = {
+        id: "burnout-" + Date.now(),
+        date: new Date().toISOString().split("T")[0],
+        score: totalScore,
+        total: 40,
+        level,
+        domainScores: domainMap,
+        mainConcern,
+        prescription: data,
+      };
+      saveBurnoutHistoryToFirestore(historyItem).catch((err) => console.error("Firestore burnout save error:", err));
     } catch (e) {
       console.error(e);
     } finally {

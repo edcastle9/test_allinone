@@ -17,6 +17,23 @@ import {
 } from "lucide-react";
 import { DiaryEntry } from "../types";
 import { speechController } from "../utils/speech";
+import {
+  subscribeToDiaryEntries,
+  saveDiaryEntryToFirestore,
+  deleteDiaryEntryFromFirestore,
+} from "../services/firestoreService";
+
+const INITIAL_FALLBACK_DIARY: DiaryEntry[] = [
+  {
+    id: "sample-1",
+    date: new Date().toISOString().split("T")[0],
+    emotion: "소나기",
+    title: "오늘 하루 종일 가슴이 조여왔던 날",
+    content: `오늘 3교시 수업 시간에 아이들이 통제가 안 되어 소리를 질러버렸다. 교사로서 품위를 잃은 것 같아 자책감이 든다. 방과 후에는 한 학부모님께서 왜 우리 아이를 그렇게 혼내냐며 항의 전화를 주셨다. 나도 사람인데, 어디까지 참고 어디까지 버텨야 할까...`,
+    aiLetter: `선생님, 오늘 일기 속에 담긴 고단함과 서러움이 마음 깊이 전해집니다.\n\n선생님이 소리를 질렀던 것은 무능해서가 아니라, 그동안 꾹꾹 참아왔던 인내의 잔이 넘칠 만큼 최선을 다해 버텼기 때문입니다. 교사도 상처받고 지치는 온전한 사람입니다.\n\n오늘 밤은 스스로를 향한 날카로운 잣대를 내려놓으세요. 선생님은 오늘도 아이들을 위해 온 힘을 다하셨고, 그 자체로 존경받아 마땅합니다. 푹 쉬시고 따뜻한 차 한 잔으로 마음을 꼭 안아주세요.`,
+    tags: ["학생 지도", "학부모", "자책감"],
+  },
+];
 
 export const SecretDiary: React.FC = () => {
   const [entries, setEntries] = useState<DiaryEntry[]>(() => {
@@ -26,26 +43,43 @@ export const SecretDiary: React.FC = () => {
         return JSON.parse(saved);
       } catch (e) {}
     }
-    return [
-      {
-        id: "sample-1",
-        date: new Date().toISOString().split("T")[0],
-        emotion: "소나기",
-        title: "오늘 하루 종일 가슴이 조여왔던 날",
-        content: `오늘 3교시 수업 시간에 아이들이 통제가 안 되어 소리를 질러버렸다. 교사로서 품위를 잃은 것 같아 자책감이 든다. 방과 후에는 한 학부모님께서 왜 우리 아이를 그렇게 혼내냐며 항의 전화를 주셨다. 나도 사람인데, 어디까지 참고 어디까지 버텨야 할까...`,
-        aiLetter: `선생님, 오늘 일기 속에 담긴 고단함과 서러움이 마음 깊이 전해집니다.\n\n선생님이 소리를 질렀던 것은 무능해서가 아니라, 그동안 꾹꾹 참아왔던 인내의 잔이 넘칠 만큼 최선을 다해 버텼기 때문입니다. 교사도 상처받고 지치는 온전한 사람입니다.\n\n오늘 밤은 스스로를 향한 날카로운 잣대를 내려놓으세요. 선생님은 오늘도 아이들을 위해 온 힘을 다하셨고, 그 자체로 존경받아 마땅합니다. 푹 쉬시고 따뜻한 차 한 잔으로 마음을 꼭 안아주세요.`,
-        tags: ["학생 지도", "학부모", "자책감"],
-      },
-    ];
+    return INITIAL_FALLBACK_DIARY;
   });
 
-  const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(entries[0] || null);
+  const [selectedEntry, setSelectedEntry] = useState<DiaryEntry | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [emotion, setEmotion] = useState("소나기");
   const [selectedTags, setSelectedTags] = useState<string[]>(["학생 지도"]);
   const [loadingLetter, setLoadingLetter] = useState(false);
+
+  // Real-time Firestore sync
+  useEffect(() => {
+    const unsubscribe = subscribeToDiaryEntries(
+      (firestoreEntries) => {
+        if (firestoreEntries && firestoreEntries.length > 0) {
+          setEntries(firestoreEntries);
+          setSelectedEntry((prev) => (prev ? firestoreEntries.find(e => e.id === prev.id) || firestoreEntries[0] : firestoreEntries[0]));
+          localStorage.setItem("teacher_secret_diary", JSON.stringify(firestoreEntries));
+        } else {
+          // If Firestore is empty, save initial fallback
+          INITIAL_FALLBACK_DIARY.forEach(e => saveDiaryEntryToFirestore(e).catch(() => {}));
+        }
+      },
+      (err) => {
+        console.warn("Firestore diary sync error:", err);
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    if (!selectedEntry && entries.length > 0) {
+      setSelectedEntry(entries[0]);
+    }
+  }, [entries, selectedEntry]);
 
   useEffect(() => {
     localStorage.setItem("teacher_secret_diary", JSON.stringify(entries));
@@ -90,6 +124,7 @@ export const SecretDiary: React.FC = () => {
       content,
       aiLetter: aiLetterText,
       tags: selectedTags,
+      createdAt: new Date().toISOString(),
     };
 
     setEntries([newEntry, ...entries]);
@@ -97,6 +132,9 @@ export const SecretDiary: React.FC = () => {
     setIsCreating(false);
     setTitle("");
     setContent("");
+
+    // Persist to Firestore
+    saveDiaryEntryToFirestore(newEntry).catch((err) => console.error("Firestore diary save error:", err));
   };
 
   const handleDelete = (id: string) => {
@@ -106,6 +144,7 @@ export const SecretDiary: React.FC = () => {
       if (selectedEntry?.id === id) {
         setSelectedEntry(filtered[0] || null);
       }
+      deleteDiaryEntryFromFirestore(id).catch((err) => console.error("Firestore diary delete error:", err));
     }
   };
 

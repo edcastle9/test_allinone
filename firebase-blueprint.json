@@ -1,0 +1,57 @@
+{
+  "entities": {
+    "counseling_sessions": {
+      "title": "Counseling Sessions",
+      "description": "Teacher AI psychological counseling conversations and stress diagnostics",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Session unique ID" },
+        "title": { "type": "string", "description": "Session title" },
+        "schoolLevel": { "type": "string", "description": "School level (초등, 중등, 고등, 유아/특수)" },
+        "teacherRole": { "type": "string", "description": "Teacher role (담임교사, 교과교사, 부장교사 등)" },
+        "category": { "type": "string", "description": "Counseling category" },
+        "stressCategory": { "type": "string", "description": "Primary stress category" },
+        "stressScore": { "type": "number", "description": "Calculated stress score (0-10)" },
+        "createdAt": { "type": "string", "description": "Creation ISO date string" },
+        "updatedAt": { "type": "string", "description": "Last updated ISO date string" },
+        "messages": { "type": "array", "description": "Array of chat messages in this session" },
+        "summary": { "type": "string", "description": "AI-generated summary of the session" }
+      },
+      "required": ["id", "title", "createdAt", "updatedAt", "messages"]
+    },
+    "diary_entries": {
+      "title": "Secret Diary Entries",
+      "description": "Encrypted teacher emotion diary entries and AI senior counselor response letters",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Diary entry unique ID" },
+        "date": { "type": "string", "description": "Diary entry date" },
+        "emotion": { "type": "string", "description": "Emotional weather / mood" },
+        "title": { "type": "string", "description": "Entry title" },
+        "content": { "type": "string", "description": "Diary text content" },
+        "aiLetter": { "type": "string", "description": "AI comforting letter response" },
+        "tags": { "type": "array", "description": "Selected emotion/situation tags" },
+        "stressCategory": { "type": "string", "description": "Associated stress category" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["id", "date", "emotion", "title", "content", "tags"]
+    },
+    "burnout_history": {
+      "title": "Burnout Test History",
+      "description": "MBI-Educator burnout test records and AI tailored prescriptions",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string", "description": "Record unique ID" },
+        "date": { "type": "string", "description": "Test date string" },
+        "score": { "type": "number", "description": "Total burnout score (0-40)" },
+        "total": { "type": "number", "description": "Total possible points (40)" },
+        "level": { "type": "string", "description": "Burnout level: 안정, 주의, 경고, 심각" },
+        "domainScores": { "type": "object", "description": "Domain specific scores" },
+        "mainConcern": { "type": "string", "description": "Primary selected concern" },
+        "prescription": { "type": "object", "description": "AI psychological prescription" },
+        "createdAt": { "type": "string", "description": "Creation timestamp" }
+      },
+      "required": ["id", "date", "score", "level", "domainScores"]
+    }
+  }
+}

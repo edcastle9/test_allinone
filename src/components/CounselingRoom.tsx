@@ -23,6 +23,11 @@ import { CounselingCategory, CounselingSession } from "../types";
 import { COUNSELING_CATEGORIES } from "../data/counselingData";
 import { speechController } from "../utils/speech";
 import { ParentScriptModal } from "./ParentScriptModal";
+import {
+  subscribeToCounselingSessions,
+  saveCounselingSessionToFirestore,
+  deleteCounselingSessionFromFirestore,
+} from "../services/firestoreService";
 
 interface CounselingRoomProps {
   teacherSchool: string;
@@ -49,8 +54,31 @@ export const CounselingRoom: React.FC<CounselingRoomProps> = ({
   const [showScriptModal, setShowScriptModal] = useState(false);
   const chatBottomRef = useRef<HTMLDivElement>(null);
 
-  // 1. Fetch sessions from Backend Server on mount
-  const loadSessions = async () => {
+  // 1. Fetch sessions from Firestore + Backend Server on mount
+  useEffect(() => {
+    setLoadingSessions(true);
+    // Subscribe to Firestore for real-time updates
+    const unsubscribe = subscribeToCounselingSessions(
+      (firestoreSessions) => {
+        if (firestoreSessions && firestoreSessions.length > 0) {
+          setSessions(firestoreSessions);
+          setCurrentSessionId((prev) => (prev ? prev : firestoreSessions[0].id));
+          setLoadingSessions(false);
+        } else {
+          // If Firestore is empty initially, load default/server sessions
+          loadSessionsFromServer();
+        }
+      },
+      (error) => {
+        console.warn("Firestore subscription error, falling back to server API:", error);
+        loadSessionsFromServer();
+      }
+    );
+
+    return () => unsubscribe();
+  }, []);
+
+  const loadSessionsFromServer = async () => {
     try {
       setLoadingSessions(true);
       const res = await fetch("/api/counseling/sessions");
@@ -59,6 +87,10 @@ export const CounselingRoom: React.FC<CounselingRoomProps> = ({
         setSessions(data.sessions);
         setCurrentSessionId(data.sessions[0].id);
         setSelectedCategory(data.sessions[0].category || "all");
+        // Save initial sessions to Firestore so they persist in cloud
+        data.sessions.forEach((s: CounselingSession) => {
+          saveCounselingSessionToFirestore(s).catch(() => {});
+        });
       }
     } catch (e) {
       console.error("Failed to load sessions from server:", e);
@@ -66,10 +98,6 @@ export const CounselingRoom: React.FC<CounselingRoomProps> = ({
       setLoadingSessions(false);
     }
   };
-
-  useEffect(() => {
-    loadSessions();
-  }, []);
 
   const currentSession = sessions.find((s) => s.id === currentSessionId) || sessions[0];
 
@@ -86,7 +114,7 @@ export const CounselingRoom: React.FC<CounselingRoomProps> = ({
     };
   }, []);
 
-  // 2. Create a new counseling session on the server
+  // 2. Create a new counseling session on the server & Firestore
   const handleCreateNewSession = async () => {
     try {
       const res = await fetch("/api/counseling/sessions", {
@@ -103,18 +131,21 @@ export const CounselingRoom: React.FC<CounselingRoomProps> = ({
       if (data.session) {
         setSessions((prev) => [data.session, ...prev]);
         setCurrentSessionId(data.session.id);
+        // Persist to Cloud Firestore
+        saveCounselingSessionToFirestore(data.session).catch(() => {});
       }
     } catch (e) {
       console.error("Failed to create new session:", e);
     }
   };
 
-  // 3. Delete session from server
+  // 3. Delete session from server & Firestore
   const handleDeleteSession = async (sessionId: string, e: React.MouseEvent) => {
     e.stopPropagation();
     if (window.confirm("이 상담 기록을 완전히 삭제하시겠습니까?")) {
       try {
         await fetch(`/api/counseling/sessions/${sessionId}`, { method: "DELETE" });
+        deleteCounselingSessionFromFirestore(sessionId).catch(() => {});
         const remaining = sessions.filter((s) => s.id !== sessionId);
         setSessions(remaining);
         if (currentSessionId === sessionId && remaining.length > 0) {
@@ -128,7 +159,7 @@ export const CounselingRoom: React.FC<CounselingRoomProps> = ({
     }
   };
 
-  // 4. Send Message via Backend Server API
+  // 4. Send Message via Backend Server API & sync to Firestore
   const handleSendMessage = async (textToSend?: string) => {
     const query = (textToSend || input).trim();
     if (!query || loading || !currentSession) return;
@@ -153,6 +184,8 @@ export const CounselingRoom: React.FC<CounselingRoomProps> = ({
         setSessions((prev) =>
           prev.map((s) => (s.id === data.session.id ? data.session : s))
         );
+        // Persist updated session with AI response to Firestore
+        saveCounselingSessionToFirestore(data.session).catch(() => {});
       }
     } catch (error) {
       console.error(error);

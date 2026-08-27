@@ -2,6 +2,7 @@
   "name": "토닥토닥 교사실 - 지친 교사를 위한 AI 심리상담 쉼터",
   "description": "교직 스트레스, 학부모 민원, 학생 지도와 업무 과중으로 지친 교사를 따뜻하게 위로하고 실질적인 심리 대처와 힐링 리추얼을 제공하는 맞춤형 AI 상담 쉼터",
   "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
 }
-

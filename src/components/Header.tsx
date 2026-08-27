@@ -11,6 +11,7 @@ import {
   Activity,
   Terminal,
   Shield,
+  Database,
 } from "lucide-react";
 import { ambientSound } from "../utils/audioSynthesizer";
 
@@ -205,6 +206,16 @@ export const Header: React.FC<HeaderProps> = ({
               />
             </div>
           )}
+        </div>
+
+        {/* Firestore Live Sync Status Badge */}
+        <div
+          className="hidden xl:flex items-center gap-1.5 bg-[#141417] border border-[#00ff66]/40 px-2.5 py-1 text-[11px] font-mono text-[#00ff66]"
+          title="Google Cloud Firestore 실시간 동기화 활성화됨"
+        >
+          <Database className="w-3 h-3 text-[#00ff66]" />
+          <span>FIRESTORE: LIVE</span>
+          <span className="w-1.5 h-1.5 rounded-full bg-[#00ff66] animate-pulse" />
         </div>
 
         {/* Teacher ID Badge / Config Switch */}
